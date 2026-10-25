@@ -27,8 +27,8 @@ reload with no reinstall.
 
 **One-off.** `./server/serve.sh` (or `python3 -m http.server 8765`) serves it in the foreground until Ctrl-C.
 
-**Hosted.** The same page is published as a Claude artifact, and the repository can be served by GitHub Pages
-once it is public.
+**Hosted.** Live at https://jaiiacerff.github.io/aeon-spiral/ via GitHub Pages (rebuilt on every push to
+`main`). The same page is also published as a Claude artifact.
 
 **Appearance.** The page follows the system light/dark setting; the Night mode / Day mode button in the header
 overrides it, and the choice is remembered per browser.
