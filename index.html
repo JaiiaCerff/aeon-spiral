@@ -1,0 +1,190 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aeon Spiral</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23141924' stroke='%238d9ac6' stroke-width='2'/%3E%3Cpath d='M32 58 C14 50 16 36 32 34 C46 32 48 22 32 18 C22 15 24 8 32 6' fill='none' stroke='%23e6a66d' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Interactive 3D visualiser of time–entropy relations on different topologies, built on conformal cyclic cosmology and exact results from statistical physics.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: an instrument. Controls on the left, the 3D stage in the middle, a reading desk on the right, two strip views below the stage. */
+  :root {
+    --bg: #eef1f6; --panel: #ffffff; --panel2: #f5f7fb; --fg: #161c2a; --muted: #5a6376; --grid: #d6dce7; --line: #cbd3df;
+    --accent: #b0601a; --accent-soft: #f3e4d4; --seq-lo: #c6d0f3; --seq-hi: #1e2a7b; --surface3d: #8d9ac6; --grid3d: #6d789c; --warn: #9a3d12;
+    --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif; --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0c0f16; --panel: #141924; --panel2: #1a2030; --fg: #e5e9f1; --muted: #8e98ac; --grid: #262f42; --line: #2b3447;
+    --accent: #e6a66d; --accent-soft: #3a2b1d; --seq-lo: #2a3890; --seq-hi: #d7ddff; --surface3d: #4b5888; --grid3d: #8893bd; --warn: #f0a06a; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg: #0c0f16; --panel: #141924; --panel2: #1a2030; --fg: #e5e9f1; --muted: #8e98ac; --grid: #262f42; --line: #2b3447;
+    --accent: #e6a66d; --accent-soft: #3a2b1d; --seq-lo: #2a3890; --seq-hi: #d7ddff; --surface3d: #4b5888; --grid3d: #8893bd; --warn: #f0a06a; color-scheme: dark; }
+
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 13px; line-height: 1.45; box-sizing: border-box;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; }
+  *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
+  .app { display: grid; grid-template-columns: 292px minmax(0, 1fr) 352px; grid-template-rows: auto minmax(0, 1fr) 236px; gap: 10px; height: 100%; min-height: 0; }
+  header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding: 2px 4px 0; }
+  header h1 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .presets { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px; }
+  header .theme { font: inherit; font-size: 12px; padding: 4px 10px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--fg); border-radius: 999px; cursor: pointer; order: 3; }
+  header .theme:hover { border-color: var(--accent); }
+  .presets button, .btns button, .tabs button, #play { font: inherit; font-size: 12px; padding: 4px 9px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 6px; cursor: pointer; }
+  .presets button:hover, .btns button:hover, .tabs button:hover { border-color: var(--accent); }
+  .btns button.on, .tabs button.on { background: var(--accent-soft); border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .controls { grid-row: 2 / 4; grid-column: 1; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px 12px; min-height: 0; }
+  .controls details { border-top: 1px solid var(--line); padding: 6px 0 8px; }
+  .controls details:first-of-type { border-top: 0; }
+  .controls summary { font-weight: 600; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); cursor: pointer; padding: 6px 0; }
+  .ctl { display: flex; flex-direction: column; gap: 3px; margin: 8px 0; }
+  .ctl.row { flex-direction: row; align-items: center; gap: 8px; }
+  .ctl label { font-size: 12px; color: var(--fg); display: flex; justify-content: space-between; gap: 8px; }
+  .ctl label output { font-family: var(--font-mono); color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+  .ctl select, .ctl input[type=text] { font: inherit; font-size: 12px; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); color: var(--fg); width: 100%; min-width: 0; }
+  .ctl input[type=text] { font-family: var(--font-mono); font-size: 11.5px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 4px; }
+  .cursorbar { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; }
+  .cursorbar input[type=range] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  .cursorbar #cursorOut { font-family: var(--font-mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .speed { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .speed input { width: 70px; accent-color: var(--accent); }
+
+  .stage { grid-row: 2; grid-column: 2; position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 0; }
+  .stage canvas { display: block; width: 100% !important; height: 100% !important; touch-action: none; }
+  .stage .legend { position: absolute; left: 10px; bottom: 8px; display: flex; gap: 14px; font-size: 11px; color: var(--muted); pointer-events: none; }
+  .stage .legend i { display: inline-block; width: 42px; height: 7px; border-radius: 3px; vertical-align: middle; margin-right: 6px; background: linear-gradient(90deg, var(--seq-lo), var(--seq-hi)); }
+  .stage .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 5px; }
+  .stage .hint { position: absolute; right: 10px; top: 8px; font-size: 11px; color: var(--muted); pointer-events: none; text-align: right; }
+
+  .desk { grid-row: 2 / 4; grid-column: 3; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 0; min-width: 0; }
+  .tabs { display: flex; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); }
+  .tabs button { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 0; }
+  .tab { overflow: auto; padding: 10px 12px; min-height: 0; flex: 1; }
+  .card { border-left: 3px solid var(--line); padding: 2px 0 2px 10px; margin: 0 0 12px; }
+  .card h4 { margin: 0 0 3px; font-size: 12.5px; font-weight: 600; }
+  .card p { margin: 0; color: var(--fg); }
+  .card.invariant { border-color: var(--seq-hi); }
+  .card.threshold, .card.ccc { border-color: var(--accent); }
+  .card.warning { border-color: var(--warn); }
+  .card.idea { border-color: var(--muted); }
+  .card.lens, .card.physics { border-color: var(--line); }
+  .warn { color: var(--warn); }
+  .kind { display: inline-block; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); vertical-align: middle; white-space: nowrap; }
+  .kind-exact { border-color: var(--seq-hi); color: var(--seq-hi); }
+  .kind-empirical, .kind-measured, .kind-simulation { border-color: var(--muted); }
+  .kind-model, .kind-analogy, .kind-user { border-color: var(--accent); color: var(--accent); }
+  .kind-hypothesis { border-color: var(--accent); color: var(--accent); border-style: dashed; }
+  table.kv, table.ledger { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.kv th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px 8px 4px 0; width: 48%; vertical-align: top; }
+  table.kv td { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 0; font-variant-numeric: tabular-nums; }
+  table.ledger th, table.ledger td { text-align: left; vertical-align: top; padding: 5px 6px 5px 0; border-top: 1px solid var(--line); font-size: 12px; }
+  table.ledger th { font-weight: 500; width: 30%; }
+  .hint { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+  .maths h4 { margin: 14px 0 4px; font-family: var(--font-display); font-weight: 500; font-size: 16px; }
+  .maths p { margin: 0 0 6px; max-width: 62ch; }
+  .maths .eq { font-family: var(--font-mono); font-size: 11.5px; background: var(--panel2); padding: 6px 8px; border-radius: 6px; margin: 4px 0 8px; overflow-x: auto; }
+
+  .strips { grid-row: 3; grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 0; min-width: 0; }
+  .strip { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .strip .cap { font-size: 11px; color: var(--muted); padding: 6px 10px 0; display: flex; justify-content: space-between; gap: 8px; }
+  .strip canvas { flex: 1; width: 100%; min-height: 0; display: block; }
+
+  @media (max-width: 1180px) {
+    .app { grid-template-columns: 260px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) 220px minmax(0, 300px); height: auto; min-height: 100%; }
+    .controls { grid-row: 2 / 4; }
+    .stage { grid-row: 2; grid-column: 2; min-height: 420px; }
+    .strips { grid-row: 3; grid-column: 2; }
+    .desk { grid-row: 4; grid-column: 1 / -1; min-height: 300px; }
+  }
+  @media (max-width: 760px) {
+    html, body { height: auto; }
+    .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+    .stage { grid-row: auto; grid-column: 1; height: 56vh; min-height: 320px; }
+    .strips { grid-row: auto; grid-column: 1; grid-template-columns: 1fr; height: 440px; }
+    .controls { grid-row: auto; grid-column: 1; max-height: 420px; }
+    .desk { grid-row: auto; grid-column: 1; height: 480px; }
+    header .presets { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>Aeon Spiral</h1>
+    <span class="sub">time as height, entropy as winding, topology as the lens · <span id="sourceTitle"></span></span>
+    <button type="button" id="themeBtn" class="theme" aria-label="Switch between day and night mode">Night mode</button>
+    <div class="presets" aria-label="Scenes">
+      <button type="button" data-preset="penrose">CCC chain</button>
+      <button type="button" data-preset="loxodrome">Conformal sphere</button>
+      <button type="button" data-preset="staircase">Entropy staircase</button>
+      <button type="button" data-preset="torus">Eternal return</button>
+      <button type="button" data-preset="zoom">Conformal zoom</button>
+      <button type="button" data-preset="critical">Critical point</button>
+      <button type="button" data-preset="arrow">Arrow switches on</button>
+      <button type="button" data-preset="clock">Clock emerges</button>
+    </div>
+  </header>
+
+  <aside class="controls" aria-label="Controls">
+    <details open><summary>Source</summary><div id="sec-source"></div></details>
+    <details open><summary>Clock</summary><div id="sec-clock"></div></details>
+    <details open><summary>Topology</summary><div id="sec-topology"></div></details>
+    <details open><summary>Entropy → winding</summary><div id="sec-winding"></div></details>
+    <details><summary>Display</summary><div id="sec-display"></div></details>
+  </aside>
+
+  <section class="stage" id="stage" aria-label="3D view">
+    <div class="hint">drag to orbit · wheel to zoom · shift-drag to pan<br>dark arrow: curve tangent · copper arrow: clock direction</div>
+    <div class="legend"><span><i></i>order parameter, low → high</span><span><b style="background: var(--accent)"></b>thresholds (dashed = hypothesis)</span></div>
+  </section>
+
+  <section class="strips">
+    <div class="strip"><div class="cap"><span>Source view</span><span id="modelCap"></span></div><canvas id="modelView"></canvas></div>
+    <div class="strip"><div class="cap"><span>Unrolled strip</span>
+      <span class="cursorbar"><button type="button" id="play">Play</button><input type="range" id="cursor" min="0" max="1" step="0.001" value="0.62" aria-label="Cursor along the curve"><span id="cursorOut"></span><span class="speed">speed <input type="range" id="speed" min="0.005" max="0.3" step="0.005" value="0.04"></span></span></div>
+      <canvas id="unrolled"></canvas></div>
+  </section>
+
+  <aside class="desk" aria-label="Reading desk">
+    <div class="tabs">
+      <button type="button" class="on" data-tab="tab-insight">Insight</button>
+      <button type="button" data-tab="tab-readout">Readout</button>
+      <button type="button" data-tab="tab-ledger">Rigour</button>
+      <button type="button" data-tab="tab-maths">Mathematics</button>
+    </div>
+    <div class="tab" id="tab-insight"><div id="insights"></div></div>
+    <div class="tab" id="tab-readout" hidden><div id="readout"></div></div>
+    <div class="tab" id="tab-ledger" hidden><div id="ledger"></div></div>
+    <div class="tab maths" id="tab-maths" hidden>
+      <p class="hint">What the picture means, and which parts are theorems.</p>
+      <h4>The object</h4>
+      <p>An aeon is a curve (τ, S): a clock τ and an entropy S. Nothing else is assumed. The clock becomes height h ∈ [0,1]; the entropy becomes a phase</p>
+      <div class="eq">θ = 2π (S − S₀) / S_turn</div>
+      <p>so a full turn is a fixed amount of entropy. The local tightness of the spiral is the entropy production rate in that clock, dS/dh. For an equilibrium system cooled by expansion, with T ∝ 1/a,</p>
+      <div class="eq">dS / d ln(1/T) = −T dS/dT = −C</div>
+      <p>the winding density is the heat capacity, and a second-order critical point is where the spiral winds infinitely tightly.</p>
+      <h4>Conformal lenses</h4>
+      <p>Stereographic projection of the sphere to the plane and the Mercator map to the strip are both conformal (angle-preserving):</p>
+      <div class="eq">ρ = tan(π/4 + φ/2) = e^y,   y = ln tan(π/4 + φ/2) = gd⁻¹(φ)</div>
+      <p>A curve of constant bearing β to the meridians is a straight line θ = y·tan β + c on the strip, a logarithmic spiral ρ = e^{(θ−c)/tan β} on the plane, and a loxodrome on the sphere. Constant bearing means S grows by a fixed amount per e-fold of the clock: a scale-free law, mapped to itself by any rescaling. The bearing is the invariant every conformal lens agrees on; it is reported at the cursor.</p>
+      <h4>The background universe</h4>
+      <div class="eq">H² = H₀² (Ω_r a⁻⁴ + Ω_m a⁻³ + Ω_Λ),   t = ∫ da/(aH),   η = ∫ da/(a²H)</div>
+      <p>With Λ &gt; 0 the conformal time η converges: the infinite future is a finite boundary, ℐ⁺, which is what lets Penrose treat it as a surface to glue. Comoving entropy of radiation is conserved (g_s T³ a³ = const), so all growth of the universe's entropy is gravitational: black holes, with S = k_B A / 4ℓ_P², up to the de Sitter bound</p>
+      <div class="eq">S_dS = π c⁵ / (ħ G H_∞²) ≈ 10^122.5 k_B</div>
+      <h4>Conformal cyclic cosmology</h4>
+      <p>Rescale the metric, ĝ = Ω² g. Null cones, and the equations of massless fields, do not notice. A universe containing only massless quanta has no clocks or rulers, so its far future is indistinguishable, except by scale, from a radiation-dominated Big Bang whose Weyl curvature vanishes. Penrose identifies ℐ⁺ of one aeon with the Big Bang of the next, with Ω → ∞ on one side and Ω → 0 on the other (the reciprocal hypothesis ω = −1/Ω). On the sphere this is the north pole of one aeon being the south pole of the next; on the plane it is the inversion z → 1/z; both poles have the same shadow on the floor and differ only by level. On the covering space (the helicoid) the aeon index is the sheet number, and the second law is the statement that the level, not the position, is monotone, unless information lost into black holes is discounted, which is Penrose's reset.</p>
+      <h4>Thresholds</h4>
+      <div class="eq">Ising:  T_c = 2J / ln(1+√2),  C ∼ −ln|T−T_c|,  m = [1 − sinh⁻⁴(2βJ)]^{1/8}
+Logistic:  h_KS = λ⁺ (Pesin),  r_∞ = 3.5699456…,  λ(4) = ln 2
+Kuramoto:  K_c = 2/(π g(0)) = 2γ,  r = √(1 − K_c/K)
+Percolation:  p_c = 0.59274605 (site, square),  ν = 4/3, β = 5/36</div>
+      <p>Each is an emergence threshold: an order parameter that is exactly zero on one side and non-zero on the other, with a diverging correlation length or response at the boundary. Three of them concern time directly: the KS entropy rate is the birth of an arrow of time in a reversible rule; the Kuramoto order parameter is a collective clock that exists only above K_c; and at a critical point the system is conformally invariant, the same symmetry CCC uses at the boundary of an aeon.</p>
+    </div>
+  </aside>
+</div>
+<script type="module" src="js/app.js"></script>
