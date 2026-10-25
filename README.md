@@ -11,13 +11,27 @@ model of emergence can be looked at through the same geometry as the cosmos.
 
 ## Running it
 
-Open `index.html` through any static server (ES modules do not load from `file://`):
+The page needs a static server (ES modules do not load from `file://`). Three.js is loaded from jsDelivr;
+everything else is in this folder.
+
+**Always on (macOS).** Install a login agent that serves the folder at http://localhost:8765, starts at
+login and restarts itself if it stops:
 
 ```bash
-python3 -m http.server 8765
+./server/install.sh
 ```
 
-then visit http://localhost:8765. Three.js is loaded from jsDelivr; everything else is in this folder.
+Remove it with `./server/uninstall.sh`. The agent is `com.aeonspiral.server` in `~/Library/LaunchAgents`;
+its log is `~/Library/Logs/aeon-spiral.log`. Because it serves the folder itself, edits to the files show up on
+reload with no reinstall.
+
+**One-off.** `./server/serve.sh` (or `python3 -m http.server 8765`) serves it in the foreground until Ctrl-C.
+
+**Hosted.** The same page is published as a Claude artifact, and the repository can be served by GitHub Pages
+once it is public.
+
+**Appearance.** The page follows the system light/dark setting; the Night mode / Day mode button in the header
+overrides it, and the choice is remembered per browser.
 
 ## What is on screen
 
